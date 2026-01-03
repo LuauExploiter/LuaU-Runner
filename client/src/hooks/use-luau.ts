@@ -1,5 +1,6 @@
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
-import { api, type ExecuteRequest } from "@shared/routes";
+import { api } from "@shared/routes";
+import { type ExecuteRequest } from "@shared/schema";
 
 export function useHistory() {
   return useQuery({
