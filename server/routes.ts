@@ -40,11 +40,11 @@ export async function registerRoutes(
         // Store execution in history
         await storage.createSnippet({
           code: input.code,
-          output: stdout || stderr || "<no output>",
+          output: (stdout + stderr) || "<no output>",
         });
 
         res.json({
-          output: stdout || stderr || "",
+          output: (stdout + stderr) || "",
           error: (stdout || stderr) ? undefined : "No output produced",
         });
 

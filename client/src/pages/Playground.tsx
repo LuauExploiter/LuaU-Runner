@@ -77,14 +77,40 @@ export default function Playground() {
 
   const handleCopyOutput = () => {
     if (!output) return;
-    navigator.clipboard.writeText(output).then(() => {
-      setCopied(true);
-      setTimeout(() => setCopied(false), 2000);
-      toast({
-        title: "Copied",
-        description: "Output copied to clipboard",
+    
+    // Fallback for clipboard API
+    if (navigator.clipboard && window.isSecureContext) {
+      navigator.clipboard.writeText(output).then(() => {
+        setCopied(true);
+        setTimeout(() => setCopied(false), 2000);
+        toast({
+          title: "Copied",
+          description: "Output copied to clipboard",
+        });
       });
-    });
+    } else {
+      // Fallback: create temporary textarea
+      const textArea = document.createElement("textarea");
+      textArea.value = output;
+      textArea.style.position = "fixed";
+      textArea.style.left = "-999999px";
+      textArea.style.top = "-999999px";
+      document.body.appendChild(textArea);
+      textArea.focus();
+      textArea.select();
+      try {
+        document.execCommand('copy');
+        setCopied(true);
+        setTimeout(() => setCopied(false), 2000);
+        toast({
+          title: "Copied",
+          description: "Output copied to clipboard",
+        });
+      } catch (err) {
+        console.error('Fallback copy failed', err);
+      }
+      document.body.removeChild(textArea);
+    }
   };
 
   const handleClearInput = () => {
@@ -98,110 +124,104 @@ export default function Playground() {
   return (
     <div className="h-screen w-full flex flex-col bg-background text-foreground overflow-hidden">
       {/* Header */}
-      <header className="h-14 border-b border-border flex items-center justify-between px-4 md:px-6 bg-card z-10">
-        <div className="flex items-center gap-3">
-          <div className="p-1.5 bg-primary/10 rounded-lg">
-            <Sparkles className="w-5 h-5 text-primary" />
-          </div>
+      <header className="h-14 border-b border-border flex items-center justify-between px-4 bg-card z-10">
+        <div className="flex items-center gap-2">
           <h1 className="font-sans font-bold text-lg tracking-tight">
             LuaU <span className="text-primary">Runner</span>
           </h1>
         </div>
 
-        <div className="flex items-center gap-3">
+        <div className="flex items-center gap-2">
           <Button
             onClick={handleRun}
             disabled={isPending}
+            size="sm"
             className="gap-2"
           >
             {isPending ? (
-              <>
-                <div className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" />
-                <span>Running...</span>
-              </>
+              <div className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" />
             ) : (
-              <>
-                <Play className="w-4 h-4 fill-current" />
-                <span>Run Code</span>
-              </>
+              <Play className="w-4 h-4 fill-current" />
             )}
+            <span>Run</span>
           </Button>
         </div>
       </header>
 
       {/* Main Content */}
-      <div className="flex-1 flex overflow-hidden">
-        {/* Workspace */}
-        <main className="flex-1 flex flex-col md:flex-row overflow-hidden relative">
-          {/* Editor Pane */}
-          <div className="flex-1 h-[50vh] md:h-auto p-4 md:p-6 overflow-hidden flex flex-col">
-            <div className="flex items-center justify-between mb-2">
-              <span className="text-sm font-medium text-muted-foreground">Editor (LuaU)</span>
-              <div className="flex gap-2">
-                <input
-                  type="file"
-                  ref={fileInputRef}
-                  onChange={handleFileUpload}
-                  className="hidden"
-                  accept=".lua,.luau,.txt"
-                />
-                <Button 
-                  variant="ghost" 
-                  size="icon" 
-                  title="Upload File"
-                  onClick={() => fileInputRef.current?.click()}
-                >
-                  <Upload className="w-4 h-4" />
-                </Button>
-                <Button 
-                  variant="ghost" 
-                  size="icon" 
-                  title="Clear Editor"
-                  onClick={handleClearInput}
-                >
-                  <Trash2 className="w-4 h-4 text-destructive" />
-                </Button>
-              </div>
-            </div>
-            <div className="flex-1 min-h-0 shadow-xl shadow-black/20 rounded-lg">
-              <CodeEditor 
-                value={code} 
-                onChange={setCode} 
-                disabled={isPending} 
+      <div className="flex-1 flex flex-col md:flex-row overflow-hidden">
+        {/* Editor Pane */}
+        <div className="flex-1 flex flex-col min-h-0 border-b md:border-b-0 md:border-r border-border">
+          <div className="flex items-center justify-between px-4 py-2 bg-muted/20 border-b border-border">
+            <span className="text-xs font-medium text-muted-foreground uppercase tracking-wider">Editor</span>
+            <div className="flex gap-1">
+              <input
+                type="file"
+                ref={fileInputRef}
+                onChange={handleFileUpload}
+                className="hidden"
+                accept=".lua,.luau,.txt"
               />
+              <Button 
+                variant="ghost" 
+                size="icon" 
+                className="h-8 w-8"
+                title="Upload"
+                onClick={() => fileInputRef.current?.click()}
+              >
+                <Upload className="w-4 h-4" />
+              </Button>
+              <Button 
+                variant="ghost" 
+                size="icon" 
+                className="h-8 w-8 text-destructive"
+                title="Clear"
+                onClick={handleClearInput}
+              >
+                <Trash2 className="w-4 h-4" />
+              </Button>
             </div>
           </div>
+          <div className="flex-1 min-h-0">
+            <CodeEditor 
+              value={code} 
+              onChange={setCode} 
+              disabled={isPending} 
+            />
+          </div>
+        </div>
 
-          {/* Console Pane */}
-          <div className="flex-1 h-[50vh] md:h-auto p-4 md:p-6 md:pl-0 overflow-hidden flex flex-col border-t md:border-t-0 md:border-l border-border bg-muted/5">
-            <div className="flex items-center justify-between mb-2">
-              <span className="text-sm font-medium text-muted-foreground">Console</span>
-              <div className="flex gap-2">
-                <Button 
-                  variant="ghost" 
-                  size="icon" 
-                  title="Copy Output"
-                  disabled={!output}
-                  onClick={handleCopyOutput}
-                >
-                  {copied ? <Check className="w-4 h-4 text-green-500" /> : <Copy className="w-4 h-4" />}
-                </Button>
-                <Button 
-                  variant="ghost" 
-                  size="icon" 
-                  title="Download Output"
-                  disabled={!output}
-                  onClick={handleDownloadOutput}
-                >
-                  <Download className="w-4 h-4" />
-                </Button>
-              </div>
-            </div>
-            <div className="flex-1 min-h-0">
-              <Console output={output} error={error} isLoading={isPending} />
+        {/* Console Pane */}
+        <div className="flex-1 flex flex-col min-h-0 bg-black">
+          <div className="flex items-center justify-between px-4 py-2 bg-zinc-900 border-b border-zinc-800">
+            <span className="text-xs font-medium text-zinc-400 uppercase tracking-wider">Console</span>
+            <div className="flex gap-1">
+              <Button 
+                variant="ghost" 
+                size="icon" 
+                className="h-8 w-8 text-zinc-400 hover:text-zinc-100"
+                title="Copy"
+                disabled={!output}
+                onClick={handleCopyOutput}
+              >
+                {copied ? <Check className="w-4 h-4 text-green-500" /> : <Copy className="w-4 h-4" />}
+              </Button>
+              <Button 
+                variant="ghost" 
+                size="icon" 
+                className="h-8 w-8 text-zinc-400 hover:text-zinc-100"
+                title="Download"
+                disabled={!output}
+                onClick={handleDownloadOutput}
+              >
+                <Download className="w-4 h-4" />
+              </Button>
             </div>
           </div>
-        </main>
+          <div className="flex-1 min-h-0 overflow-auto">
+            <Console output={output} error={error} isLoading={isPending} />
+          </div>
+        </div>
       </div>
     </div>
   );
