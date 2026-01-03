@@ -29,7 +29,7 @@ export async function registerRoutes(
       try {
         // Execute the Luau runtime with the temp file
         // We assume server/luau.js is the runtime and behaves like 'lua' or 'luau' CLI
-        const luauPath = path.join(process.cwd(), "server", "luau.js");
+        const luauPath = path.join(process.cwd(), "server", "luau.cjs");
         
         // Timeout after 5 seconds
         const { stdout, stderr } = await execAsync(`node "${luauPath}" "${tempFile}"`, {
