@@ -44,8 +44,8 @@ export async function registerRoutes(
         });
 
         res.json({
-          output: stdout || "",
-          error: stderr || undefined,
+          output: stdout || stderr || "",
+          error: (stdout || stderr) ? undefined : "No output produced",
         });
 
       } catch (execErr: any) {
